@@ -1,0 +1,9 @@
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: nfs-service
+subsets:
+  - addresses:
+      - ip: 10.0.2.5
+    ports:
+      - port: 2049

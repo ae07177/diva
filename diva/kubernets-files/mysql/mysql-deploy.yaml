@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: diva
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: back
+      role: mysql
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: mysql
+        tier: back
+        version: latest
+    spec:
+      containers:
+      - image: ae07177/mysql_centos7:v3
+        imagePullPolicy: Always
+        name: mysql
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        volumeMounts:
+          - name: mysql
+            subPath: my.cnf
+            mountPath: /etc/my.cnf
+          - name: dbsetup
+            subPath: start_mysql
+            mountPath: /tmp/start_mysql
+      restartPolicy: Always
+      volumes:
+        - name: mysql
+          configMap:
+            name: mysql
+        - name: dbsetup
+          configMap:
+            name: dbsetup
