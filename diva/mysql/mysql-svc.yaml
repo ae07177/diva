@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    role: mysql
+    tier: back
+  name: mysql
+  namespace: diva
+spec:
+  selector:
+    app: mysql
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+#    nodePort: 32060
+#  type: NodePort

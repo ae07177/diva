@@ -1,0 +1,11 @@
+mysql << EOF
+use mysql;
+CREATE USER 'root'@'%' IDENTIFIED BY 'root123';
+update user SET PASSWORD=PASSWORD("root123") WHERE USER='root';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%';
+flush privileges;
+create database flaskapp;
+use flaskapp;
+create table users (serial integer UNIQUE PRIMARY KEY NOT NULL,name varchar(20), email varchar(40));
+exit
+EOF

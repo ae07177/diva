@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: flaskapp
+  namespace: diva
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      tier: front
+      role: python
+  minReadySeconds: 10
+  template:
+    metadata:
+      labels:
+        app: flaskapp
+        role: python
+        tier: front
+        version: latest
+    spec:
+      containers:
+      - image: ae07177/rest_centos7:v4
+        imagePullPolicy: Always
+        name: flaskapp
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+        volumeMounts:
+          - name: flaskapp
+            subPath: app.py
+            mountPath: /FlaskApp/app.py
+      restartPolicy: Always
+      volumes:
+        - name: flaskapp
+          configMap:
+            name: flaskapp
