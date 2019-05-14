@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: stateful-mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: ae07177/mysql_centos7:v3
+#        image: mysql:5.7
+#        env:
+#        - name: MYSQL_ROOT_PASSWORD
+#          value: root123
+#        command: ["/etc/init.d/mysql", "start"]
+#        command: ["/bin/sh", "/tmp/ms.sh" ]
+        ports:
+        - name: mysql
+          containerPort: 3306
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: master-slave-logic
+#          subPath: mslogic
+          mountPath: /tmp
+      volumes:
+#      - name: config-map
+#        configMap:
+#          name: mysql
+        - name: master-slave-logic
+          configMap:
+            name: master-slave-logic
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 1Gi

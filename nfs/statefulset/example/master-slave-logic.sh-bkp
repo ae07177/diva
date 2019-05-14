@@ -1,0 +1,77 @@
+#!/bin/bash
+HOST_NAME=`hostname`
+if [ $HOST_NAME == "mysql-0" ]
+then
+
+
+if [[ -f /data/ibdata1 ]] && [[ -f /data/ib_logfile0 ]]
+then
+echo "DB Files already present in /data. No Need to Copy"
+else
+cp -varf /var/lib/mysql/. /data/.
+fi
+
+if [ `md5sum /etc/my.cnf| awk '{print $1}'` == "4dee5f57831c9f9549c48fb109567df8" ]
+then
+echo "No Changes required for my.cnf" >> /tmp/master-slave.config
+else
+
+cat <<EOF>/etc/my.cnf
+[mysqld]
+user=mysql
+server-id = 1
+binlog-do-db=diva
+relay-log = /var/lib/mysql/mysql-relay-bin
+relay-log-index = /var/lib/mysql/mysql-relay-bin.index
+log-error = /var/lib/mysql/mysql.err
+master-info-file = /var/lib/mysql/mysql-master.info
+relay-log-info-file = /var/lib/mysql/mysql-relay-log.info
+log-bin = /var/lib/mysql/mysql-bin
+EOF
+
+/usr/sbin/mysqld --defaults-file=/etc/my.cnf &disown
+
+/bin/sh /tmp/configure_db.sh
+
+fi
+
+
+
+fi
+
+if [ $HOST_NAME == "mysql-1" ]
+then
+mysql -u root -proot123 << EOF
+CREATE DATABASE diva;
+EXIT
+EOF
+
+cat <<EOF> /etc/my.cnf
+[mysqld]
+user=mysql
+datadir=/data
+socket=/var/lib/mysql/mysql.sock
+port=3306
+user=mysql
+symbolic-links=0
+bind-address=mysql-1.mysql
+master-host=mysql-0.mysql
+server-id=2
+log_bin=/var/log/mysql/mysql-bin.log
+sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES 
+binlog_do_db=diva
+relay-log=/var/log/mysql/mysql-relay-bin.log
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+EOF
+
+mysql -u root -proot123 << EOF
+CHANGE MASTER TO MASTER_HOST='mysql-0',MASTER_USER='root', MASTER_PASSWORD='root123', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=  107;
+START SLAVE;
+SET GLOBAL SQL_SLAVE_SKIP_COUNTER = 1;
+SLAVE START; 
+EXIT
+EOF
+
+fi

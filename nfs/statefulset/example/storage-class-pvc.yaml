@@ -1,0 +1,12 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: stateful-local
+spec:
+  accessModes:
+  - ReadWriteOnce
+#  storageClassName: local-storage
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 1Gi

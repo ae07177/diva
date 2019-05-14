@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-parallel
+  namespace: stateful-mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql-parallel
+  serviceName: mysql-parallel
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql-parallel
+    spec:
+      containers:
+      - name: mysql-parallel
+        image: ae07177/mysql_centos7:v3
+        command: ["/bin/sh", "-ec", "/bin/sh -x  /tmp/master-master-logic.sh > /tmp/mysql_setup.log 2>&1 ;   sleep 5 ;while :; do echo . > /dev/null ; done"]
+        ports:
+        - name: mysql-parallel
+          containerPort: 3306
+        volumeMounts:
+        - name: data-parallel
+          mountPath: /data
+        - name: master-master-logic
+          subPath: master-master-logic.sh
+          mountPath: /tmp/master-master-logic.sh
+        - name: db-setup-parallel
+          subPath: configure_db.sh
+          mountPath: /tmp/configure_db.sh
+      volumes:
+        - name: master-master-logic
+          configMap:
+            name: master-master-logic
+        - name: db-setup-parallel
+          configMap:
+            name: db-setup-parallel
+  volumeClaimTemplates:
+  - metadata:
+      name: data-parallel
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 1Gi

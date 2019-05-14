@@ -1,0 +1,15 @@
+# Headless service for stable DNS entries of StatefulSet members.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-parallel
+  namespace: stateful-mysql
+  labels:
+    app: mysql-parallel
+spec:
+  ports:
+  - name: mysql-parallel
+    port: 3306
+#  clusterIP: None
+  selector:
+    app: mysql-parallel

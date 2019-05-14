@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-stateful
+spec:
+  serviceName: "mysql-stateful-service"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mysql-stateful
+  template:
+    metadata:
+      labels:
+        app: mysql-stateful
+    spec:
+      containers:
+      - name: test-container
+        image: ae07177/mysql_centos7:v3
+        volumeMounts:
+        - name: local-vol
+          mountPath: /stateful-vol
+  volumeClaimTemplates:
+  - metadata:
+      name: local-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 1Gi

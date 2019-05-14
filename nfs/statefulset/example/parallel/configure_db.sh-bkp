@@ -1,0 +1,54 @@
+#!/bin/bash
+echo "DB Setup Started"
+HOST_NAME=`hostname`
+
+if [ $HOST_NAME == "mysql-0" ]
+then
+echo "Performing Master Setup"
+mysql -u root -proot123  << EOF
+CREATE USER 'root'@'%' IDENTIFIED BY 'root123'
+GRANT REPLICATION SLAVE ON *.* TO 'root'@'%'
+exit
+EOF
+
+LOG=`mysql -uroot -proot123 -h mysql-0.mysql -e "show master status" | awk '{print $1}' | tail -1`
+POS=`mysql -uroot -proot123 -h mysql-0.mysql -e "show master status" | awk '{print $2}' | tail -1`
+echo $LOG > /shared-drive/m1.log
+echo $POS > /shared-drive/m1.pos
+fi
+
+if [ $HOST_NAME == "mysql-1" ]
+then
+echo "Performing Master Setup"
+mysql -u root -proot123  << EOF
+CREATE USER 'root'@'%' IDENTIFIED BY 'root123'
+GRANT REPLICATION SLAVE ON *.* TO 'root'@'%'
+exit
+EOF
+
+LOG=`mysql -uroot -proot123 -h mysql-1.mysql -e "show master status" | awk '{print $1}' | tail -1`
+POS=`mysql -uroot -proot123 -h mysql-1.mysql -e "show master status" | awk '{print $2}' | tail -1`
+echo $LOG > /shared-drive/m2.log
+echo $POS > /shared-drive/m2.pos
+
+m1_log=`cat /shared-drive/m1.log`
+m1_pos=`cat /shared-drive/m1.pos`
+
+mysql -uroot -proot123 << EOF
+stop slave
+CHANGE MASTER TO MASTER_HOST = 'mysql-0.mysql',MASTER_USER = 'root', MASTER_PASSWORD = 'root123', MASTER_LOG_FILE = '${m1_log}', MASTER_LOG_POS = ${m1_pos};
+start slave
+exit
+EOF
+
+m2_log=`cat /shared-drive/m2.log`
+m2_pos=`cat /shared-drive/m2.pos`
+
+mysql -uroot -proot123 -h mysql-0.mysql << EOF
+stop slave
+CHANGE MASTER TO MASTER_HOST = 'mysql-1.mysql',MASTER_USER = 'root', MASTER_PASSWORD = 'root123', MASTER_LOG_FILE = '${m2_log}', MASTER_LOG_POS = ${m2_pos};
+start slave
+exit
+EOF
+
+fi
